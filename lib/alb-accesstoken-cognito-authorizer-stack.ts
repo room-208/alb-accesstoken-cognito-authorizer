@@ -2,7 +2,10 @@ import * as cdk from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as actions from "aws-cdk-lib/aws-elasticloadbalancingv2-actions";
 import * as route53 from "aws-cdk-lib/aws-route53";
+import * as route53Targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 
 export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
@@ -70,6 +73,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
         requireSymbols: true,
       },
       mfa: cognito.Mfa.REQUIRED,
+      mfaSecondFactor: { sms: false, otp: true, email: false },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
     });
 
@@ -110,6 +114,39 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       cognitoDomain: {
         domainPrefix: this.userPoolDomainPrefix,
       },
+    });
+
+    const albSecurityGroup = new ec2.SecurityGroup(this, "AlbSecurityGroup", {
+      vpc,
+      allowAllOutbound: true,
+    });
+    albSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443));
+
+    const alb = new elbv2.ApplicationLoadBalancer(this, "ALB", {
+      vpc,
+      internetFacing: true,
+      securityGroup: albSecurityGroup,
+    });
+
+    const httpsListener = alb.addListener("HttpsListener", {
+      port: 443,
+      certificates: [certificate],
+      defaultAction: new actions.AuthenticateCognitoAction({
+        userPool,
+        userPoolClient,
+        userPoolDomain,
+        next: elbv2.ListenerAction.fixedResponse(200, {
+          contentType: "text/plain",
+          messageBody: "Authenticated",
+        }),
+      }),
+    });
+
+    const albRecord = new route53.ARecord(this, "albRecord", {
+      zone: hostedZone,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.LoadBalancerTarget(alb)
+      ),
     });
   }
 }
