@@ -25,7 +25,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     this.apiDomainName = `api.${this.domainName}`;
     this.resourceServerId = this.apiDomainName;
     this.resourceServerScope = {
-      scopeName: "full_access",
+      scopeName: "api:all",
       scopeDescription: "Full access to API",
     };
     this.resourceServerScopeId = `${this.resourceServerId}/${this.resourceServerScope.scopeName}`;
@@ -96,7 +96,10 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
         },
         scopes: [
           cognito.OAuthScope.OPENID,
-          { scopeName: this.resourceServerScopeId },
+          cognito.OAuthScope.resourceServer(
+            resourceServer,
+            this.resourceServerScope
+          ),
         ],
         callbackUrls: [`https://${this.albDomainName}/oauth2/idpresponse`],
       },
