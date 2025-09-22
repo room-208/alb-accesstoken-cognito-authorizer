@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
-import { AlbAccesstokenCognitoAuthorizerStack } from "../lib/alb-accesstoken-cognito-authorizer-stack";
 import { AwsSolutionsChecks } from "cdk-nag";
+import "dotenv/config";
+import { AlbAccesstokenCognitoAuthorizerStack } from "../lib/alb-accesstoken-cognito-authorizer-stack";
 
 const app = new cdk.App();
 
