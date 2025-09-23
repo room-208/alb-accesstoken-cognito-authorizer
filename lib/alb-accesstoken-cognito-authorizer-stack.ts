@@ -137,6 +137,9 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       portMappings: [
         { hostPort: 80, containerPort: 80, protocol: ecs.Protocol.TCP },
       ],
+      environment: {
+        ALB_PUBLIC_KEY_BASE_URL: `https://public-keys.auth.elb.${this.region}.amazonaws.com/`,
+      },
     });
 
     const fargateSecurityGroup = new ec2.SecurityGroup(
@@ -212,6 +215,11 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       {
         code: lambda.DockerImageCode.fromImageAsset("docker/api-server"),
         timeout: cdk.Duration.seconds(10),
+        environment: {
+          ISSUER: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
+          JWKS_URL: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}/.well-known/jwks.json`,
+          USERINFO_URL: `https://${userPoolDomain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/userInfo`,
+        },
       }
     );
 

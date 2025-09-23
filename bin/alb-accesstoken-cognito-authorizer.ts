@@ -62,4 +62,8 @@ NagSuppressions.addStackSuppressions(stack, [
     id: "AwsSolutions-APIG3",
     reason: "テスト用なので必要ない",
   },
+  {
+    id: "AwsSolutions-ECS2",
+    reason: "テスト用なので必要ない",
+  },
 ]);
