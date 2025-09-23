@@ -133,7 +133,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     );
 
     fargatetaskDefinition.addContainer("AppContainer", {
-      image: ecs.ContainerImage.fromAsset("web-server"),
+      image: ecs.ContainerImage.fromAsset("docker/web-server"),
       portMappings: [
         { hostPort: 80, containerPort: 80, protocol: ecs.Protocol.TCP },
       ],
