@@ -206,21 +206,14 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       ),
     });
 
-    const lambdaFunction = new lambda.Function(this, "LambdaFunction", {
-      runtime: lambda.Runtime.NODEJS_LATEST,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-        exports.handler = async (event) => {
-          console.log("Received event:", JSON.stringify(event, null, 2));
-          return {
-            statusCode: 200,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: "Hello from Lambda!" })
-          };
-        };
-      `),
-      timeout: cdk.Duration.seconds(10),
-    });
+    const lambdaFunction = new lambda.DockerImageFunction(
+      this,
+      "LambdaFunction",
+      {
+        code: lambda.DockerImageCode.fromImageAsset("docker/api-server"),
+        timeout: cdk.Duration.seconds(10),
+      }
+    );
 
     const restApi = new apigateway.RestApi(this, "RestApi");
 
@@ -233,6 +226,15 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     );
 
     const proxyResource = restApi.root.addResource("{proxy+}");
+    restApi.root.addMethod(
+      "ANY",
+      new apigateway.LambdaIntegration(lambdaFunction),
+      {
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        authorizer: cognitoAuthorizer,
+        authorizationScopes: [this.resourceServerScopeId],
+      }
+    );
     proxyResource.addMethod(
       "ANY",
       new apigateway.LambdaIntegration(lambdaFunction),
