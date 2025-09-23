@@ -1,10 +1,12 @@
 import * as cdk from "aws-cdk-lib";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as actions from "aws-cdk-lib/aws-elasticloadbalancingv2-actions";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as route53Targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
@@ -154,8 +156,11 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       cluster,
       taskDefinition: fargatetaskDefinition,
       desiredCount: 1,
-      assignPublicIp: true,
+      assignPublicIp: false,
       securityGroups: [fargateSecurityGroup],
+      vpcSubnets: vpc.selectSubnets({
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      }),
     });
 
     const fargateTargetGroup = new elbv2.ApplicationTargetGroup(
@@ -194,10 +199,61 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       }),
     });
 
-    const albRecord = new route53.ARecord(this, "albRecord", {
+    const albRecord = new route53.ARecord(this, "AlbRecord", {
       zone: hostedZone,
       target: route53.RecordTarget.fromAlias(
         new route53Targets.LoadBalancerTarget(alb)
+      ),
+    });
+
+    const lambdaFunction = new lambda.Function(this, "LambdaFunction", {
+      runtime: lambda.Runtime.NODEJS_LATEST,
+      handler: "index.handler",
+      code: lambda.Code.fromInline(`
+        exports.handler = async (event) => {
+          console.log("Received event:", JSON.stringify(event, null, 2));
+          return {
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "Hello from Lambda!" })
+          };
+        };
+      `),
+      timeout: cdk.Duration.seconds(10),
+    });
+
+    const restApi = new apigateway.RestApi(this, "RestApi");
+
+    const cognitoAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "CognitoAuthorizer",
+      {
+        cognitoUserPools: [userPool],
+      }
+    );
+
+    const proxyResource = restApi.root.addResource("{proxy+}");
+    proxyResource.addMethod(
+      "ANY",
+      new apigateway.LambdaIntegration(lambdaFunction),
+      {
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        authorizer: cognitoAuthorizer,
+        authorizationScopes: [this.resourceServerScopeId],
+      }
+    );
+
+    const apiDomain = new apigateway.DomainName(this, "ApiDomain", {
+      domainName: this.apiDomainName,
+      certificate,
+    });
+    apiDomain.addBasePathMapping(restApi);
+
+    const apiRecord = new route53.ARecord(this, "ApiRecord", {
+      zone: hostedZone,
+      recordName: this.apiDomainName,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayDomain(apiDomain)
       ),
     });
   }
