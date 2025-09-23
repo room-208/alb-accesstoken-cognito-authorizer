@@ -2,3 +2,6 @@ fastapi
 uvicorn[standard]
 pyjwt
 pyjwt[crypto]
+pydantic[email]
+pydantic-settings
+requests

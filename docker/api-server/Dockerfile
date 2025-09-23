@@ -7,5 +7,5 @@ WORKDIR /var/task
 COPY requirements.txt ./
 RUN python -m pip install -r requirements.txt
 
-COPY *.py ./
+COPY src/ ./
 CMD exec uvicorn --host 0.0.0.0 --port=$PORT main:app

@@ -137,9 +137,6 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       portMappings: [
         { hostPort: 80, containerPort: 80, protocol: ecs.Protocol.TCP },
       ],
-      environment: {
-        ALB_PUBLIC_KEY_BASE_URL: `https://public-keys.auth.elb.${this.region}.amazonaws.com/`,
-      },
     });
 
     const fargateSecurityGroup = new ec2.SecurityGroup(
