@@ -34,4 +34,12 @@ NagSuppressions.addStackSuppressions(stack, [
     id: "AwsSolutions-EC23",
     reason: "テスト用なので必要ない",
   },
+  {
+    id: "AwsSolutions-ECS4",
+    reason: "テスト用なので必要ない",
+  },
+  {
+    id: "AwsSolutions-ECS7",
+    reason: "テスト用なので必要ない",
+  },
 ]);

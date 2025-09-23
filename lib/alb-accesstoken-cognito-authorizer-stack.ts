@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as actions from "aws-cdk-lib/aws-elasticloadbalancingv2-actions";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -116,6 +117,59 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       },
     });
 
+    const cluster = new ecs.Cluster(this, "Cluster", {
+      vpc,
+    });
+
+    const fargatetaskDefinition = new ecs.FargateTaskDefinition(
+      this,
+      "FargateTaskDefinition",
+      {
+        cpu: 256,
+        memoryLimitMiB: 512,
+      }
+    );
+
+    fargatetaskDefinition.addContainer("AppContainer", {
+      image: ecs.ContainerImage.fromAsset("web-server"),
+      portMappings: [
+        { hostPort: 80, containerPort: 80, protocol: ecs.Protocol.TCP },
+      ],
+    });
+
+    const fargateSecurityGroup = new ec2.SecurityGroup(
+      this,
+      "FargateSecurityGroup",
+      {
+        vpc,
+        allowAllOutbound: true,
+      }
+    );
+    fargateSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(vpc.vpcCidrBlock),
+      ec2.Port.tcp(80)
+    );
+
+    const fargateService = new ecs.FargateService(this, "FargateService", {
+      cluster,
+      taskDefinition: fargatetaskDefinition,
+      desiredCount: 1,
+      assignPublicIp: true,
+      securityGroups: [fargateSecurityGroup],
+    });
+
+    const fargateTargetGroup = new elbv2.ApplicationTargetGroup(
+      this,
+      "FargateTargetGroup",
+      {
+        vpc,
+        port: 80,
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        targetType: elbv2.TargetType.IP,
+      }
+    );
+    fargateService.attachToApplicationTargetGroup(fargateTargetGroup);
+
     const albSecurityGroup = new ec2.SecurityGroup(this, "AlbSecurityGroup", {
       vpc,
       allowAllOutbound: true,
@@ -132,13 +186,11 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       port: 443,
       certificates: [certificate],
       defaultAction: new actions.AuthenticateCognitoAction({
-        userPool,
-        userPoolClient,
-        userPoolDomain,
-        next: elbv2.ListenerAction.fixedResponse(200, {
-          contentType: "text/plain",
-          messageBody: "Authenticated",
-        }),
+        userPool: userPool,
+        userPoolClient: userPoolClient,
+        userPoolDomain: userPoolDomain,
+        scope: `openid ${this.resourceServerScopeId}`,
+        next: elbv2.ListenerAction.forward([fargateTargetGroup]),
       }),
     });
 
