@@ -30,6 +30,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // 設定値の読み込み
     this.domainName = process.env.DOMAIN_NAME || "";
     this.albDomainName = this.domainName;
     this.apiDomainName = `api.${this.domainName}`;
@@ -46,6 +47,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     };
     this.resourceServerScopeId = `${this.resourceServerId}/${this.resourceServerScope.scopeName}`;
 
+    // VPC
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 2,
       natGateways: 1,
@@ -63,6 +65,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       ],
     });
 
+    // 既存リソースの参照
     const hostedZone = route53.HostedZone.fromLookup(this, "HostedZone", {
       domainName: this.domainName,
     });
@@ -79,6 +82,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       this.usEast1CertificateArn
     );
 
+    // Cognito
     const userPool = new cognito.UserPool(this, "UserPool", {
       selfSignUpEnabled: false,
       signInAliases: {
@@ -94,7 +98,6 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       mfa: cognito.Mfa.REQUIRED,
       mfaSecondFactor: { sms: false, otp: true, email: false },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const resourceServer = new cognito.UserPoolResourceServer(
@@ -129,6 +132,23 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       },
     });
 
+    const userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
+      userPool,
+      customDomain: {
+        domainName: this.cognitoUserPoolDomainName,
+        certificate: usEast1Certificate,
+      },
+    });
+
+    const cognitoRecord = new route53.ARecord(this, "CognitoRecord", {
+      zone: hostedZone,
+      recordName: this.cognitoUserPoolDomainName,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.UserPoolDomainTarget(userPoolDomain)
+      ),
+    });
+
+    // ECS
     const cluster = new ecs.Cluster(this, "Cluster", {
       vpc,
     });
@@ -185,6 +205,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     );
     fargateService.attachToApplicationTargetGroup(fargateTargetGroup);
 
+    // ALB
     const albSecurityGroup = new ec2.SecurityGroup(this, "AlbSecurityGroup", {
       vpc,
       allowAllOutbound: true,
@@ -204,22 +225,9 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       ),
     });
 
-    const userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
-      userPool,
-      customDomain: {
-        domainName: this.cognitoUserPoolDomainName,
-        certificate: usEast1Certificate,
-      },
-    });
+    // ドメインのAレコードが必要なため
+    // https://dev.classmethod.jp/articles/amazon-cognito-hosted-ui-customize-domain/
     userPoolDomain.node.addDependency(albRecord);
-
-    const cognitoRecord = new route53.ARecord(this, "CognitoRecord", {
-      zone: hostedZone,
-      recordName: this.cognitoUserPoolDomainName,
-      target: route53.RecordTarget.fromAlias(
-        new route53Targets.UserPoolDomainTarget(userPoolDomain)
-      ),
-    });
 
     const httpsListener = alb.addListener("HttpsListener", {
       port: 443,
@@ -233,6 +241,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       }),
     });
 
+    // Lambda
     const lambdaFunction = new lambda.DockerImageFunction(
       this,
       "LambdaFunction",
@@ -247,6 +256,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       }
     );
 
+    // API
     const restApi = new apigateway.RestApi(this, "RestApi");
 
     const cognitoAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(
