@@ -10,7 +10,13 @@ cdk.Aspects.of(app).add(new AwsSolutionsChecks());
 
 const stack = new AlbAccesstokenCognitoAuthorizerStack(
   app,
-  "AlbAccesstokenCognitoAuthorizerStack"
+  "AlbAccesstokenCognitoAuthorizerStack",
+  {
+    env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: process.env.CDK_DEFAULT_REGION,
+    },
+  }
 );
 
 NagSuppressions.addStackSuppressions(stack, [

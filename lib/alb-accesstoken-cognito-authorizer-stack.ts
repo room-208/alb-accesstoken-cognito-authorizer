@@ -17,6 +17,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
 
   private readonly albDomainName: string;
   private readonly apiDomainName: string;
+  private readonly cognitoUserPoolDomainName: string;
   private readonly resourceServerId: string;
   private readonly resourceServerScope: cognito.ResourceServerScope;
   private readonly resourceServerScopeId: string;
@@ -29,6 +30,8 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
 
     this.albDomainName = this.domainName;
     this.apiDomainName = `api.${this.domainName}`;
+    this.cognitoUserPoolDomainName = `auth.${this.domainName}`;
+
     this.resourceServerId = this.apiDomainName;
     this.resourceServerScope = {
       scopeName: "api:all",
@@ -53,8 +56,8 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       ],
     });
 
-    const hostedZone = new route53.HostedZone(this, "HostedZone", {
-      zoneName: this.domainName,
+    const hostedZone = route53.HostedZone.fromLookup(this, "HostedZone", {
+      domainName: this.domainName,
     });
 
     const certificate = new acm.Certificate(this, "Certificate", {
@@ -112,12 +115,23 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       },
     });
 
-    const userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
-      userPool,
-      cognitoDomain: {
-        domainPrefix: this.userPoolDomainPrefix,
-      },
-    });
+    const userPoolCustomDomain = new cognito.CfnUserPoolDomain(
+      this,
+      "UserPoolCustomDomain",
+      {
+        domain: this.cognitoUserPoolDomainName,
+        userPoolId: userPool.userPoolId,
+        customDomainConfig: {
+          certificateArn: certificate.certificateArn,
+        },
+      }
+    );
+
+    const userPoolDomain = cognito.UserPoolDomain.fromDomainName(
+      this,
+      "userPoolDomain",
+      userPoolCustomDomain.domain
+    );
 
     const cluster = new ecs.Cluster(this, "Cluster", {
       vpc,
