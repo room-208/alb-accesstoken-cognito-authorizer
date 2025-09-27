@@ -12,12 +12,17 @@ import * as route53Targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 
 export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
+  // ドメイン
   private readonly domainName: string;
-  private readonly userPoolDomainPrefix: string;
-
   private readonly albDomainName: string;
   private readonly apiDomainName: string;
   private readonly cognitoUserPoolDomainName: string;
+
+  // ACM
+  private readonly apNortheast1CertificateArn: string;
+  private readonly usEast1CertificateArn: string;
+
+  // カスタムスコープ
   private readonly resourceServerId: string;
   private readonly resourceServerScope: cognito.ResourceServerScope;
   private readonly resourceServerScopeId: string;
@@ -26,11 +31,13 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
     super(scope, id, props);
 
     this.domainName = process.env.DOMAIN_NAME || "";
-    this.userPoolDomainPrefix = process.env.USER_POOL_DOMAIN_PREFIX || "";
-
     this.albDomainName = this.domainName;
     this.apiDomainName = `api.${this.domainName}`;
     this.cognitoUserPoolDomainName = `auth.${this.domainName}`;
+
+    this.apNortheast1CertificateArn =
+      process.env.AP_NORTHEAST_1_CERTIFICATE_ARN || "";
+    this.usEast1CertificateArn = process.env.US_EAST_1_CERTIFICATE_ARN || "";
 
     this.resourceServerId = this.apiDomainName;
     this.resourceServerScope = {
@@ -60,11 +67,17 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       domainName: this.domainName,
     });
 
-    const certificate = new acm.Certificate(this, "Certificate", {
-      domainName: this.domainName,
-      subjectAlternativeNames: [`*.${this.domainName}`],
-      validation: acm.CertificateValidation.fromDns(hostedZone),
-    });
+    const apNortheast1Certificate = acm.Certificate.fromCertificateArn(
+      this,
+      "ApNortheast1Certificate",
+      this.apNortheast1CertificateArn
+    );
+
+    const usEast1Certificate = acm.Certificate.fromCertificateArn(
+      this,
+      "UsEast1Certificate",
+      this.usEast1CertificateArn
+    );
 
     const userPool = new cognito.UserPool(this, "UserPool", {
       selfSignUpEnabled: false,
@@ -81,6 +94,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       mfa: cognito.Mfa.REQUIRED,
       mfaSecondFactor: { sms: false, otp: true, email: false },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const resourceServer = new cognito.UserPoolResourceServer(
@@ -114,24 +128,6 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
         callbackUrls: [`https://${this.albDomainName}/oauth2/idpresponse`],
       },
     });
-
-    const userPoolCustomDomain = new cognito.CfnUserPoolDomain(
-      this,
-      "UserPoolCustomDomain",
-      {
-        domain: this.cognitoUserPoolDomainName,
-        userPoolId: userPool.userPoolId,
-        customDomainConfig: {
-          certificateArn: certificate.certificateArn,
-        },
-      }
-    );
-
-    const userPoolDomain = cognito.UserPoolDomain.fromDomainName(
-      this,
-      "userPoolDomain",
-      userPoolCustomDomain.domain
-    );
 
     const cluster = new ecs.Cluster(this, "Cluster", {
       vpc,
@@ -201,9 +197,33 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
       securityGroup: albSecurityGroup,
     });
 
+    const albRecord = new route53.ARecord(this, "AlbRecord", {
+      zone: hostedZone,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.LoadBalancerTarget(alb)
+      ),
+    });
+
+    const userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
+      userPool,
+      customDomain: {
+        domainName: this.cognitoUserPoolDomainName,
+        certificate: usEast1Certificate,
+      },
+    });
+    userPoolDomain.node.addDependency(albRecord);
+
+    const cognitoRecord = new route53.ARecord(this, "CognitoRecord", {
+      zone: hostedZone,
+      recordName: this.cognitoUserPoolDomainName,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.UserPoolDomainTarget(userPoolDomain)
+      ),
+    });
+
     const httpsListener = alb.addListener("HttpsListener", {
       port: 443,
-      certificates: [certificate],
+      certificates: [apNortheast1Certificate],
       defaultAction: new actions.AuthenticateCognitoAction({
         userPool: userPool,
         userPoolClient: userPoolClient,
@@ -211,13 +231,6 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
         scope: `openid ${this.resourceServerScopeId}`,
         next: elbv2.ListenerAction.forward([fargateTargetGroup]),
       }),
-    });
-
-    const albRecord = new route53.ARecord(this, "AlbRecord", {
-      zone: hostedZone,
-      target: route53.RecordTarget.fromAlias(
-        new route53Targets.LoadBalancerTarget(alb)
-      ),
     });
 
     const lambdaFunction = new lambda.DockerImageFunction(
@@ -266,7 +279,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
 
     const apiDomain = new apigateway.DomainName(this, "ApiDomain", {
       domainName: this.apiDomainName,
-      certificate,
+      certificate: apNortheast1Certificate,
     });
     apiDomain.addBasePathMapping(restApi);
 
