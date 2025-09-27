@@ -251,7 +251,7 @@ export class AlbAccesstokenCognitoAuthorizerStack extends cdk.Stack {
         environment: {
           ISSUER: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
           JWKS_URL: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}/.well-known/jwks.json`,
-          USERINFO_URL: `https://${userPoolDomain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/userInfo`,
+          USERINFO_URL: `https://${this.cognitoUserPoolDomainName}/oauth2/userInfo`,
         },
       }
     );
