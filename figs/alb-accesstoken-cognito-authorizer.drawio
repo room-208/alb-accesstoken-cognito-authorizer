@@ -80,6 +80,9 @@
         <mxCell id="u8mjXGVM8PjKGsMt5R4k-2" value="x-amzn-oidc-accesstoken" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="-40" y="240" width="150" height="30" as="geometry" />
         </mxCell>
+        <mxCell id="u8mjXGVM8PjKGsMt5R4k-3" value="api.example.com/api:all" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="-120" width="160" height="30" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
