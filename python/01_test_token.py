@@ -19,9 +19,9 @@ HTTP_X_AMZN_OIDC_ACCESSTOKEN = os.environ["HTTP_X_AMZN_OIDC_ACCESSTOKEN"]
 alb_public_key_base_url = f"https://public-keys.auth.elb.{REGION}.amazonaws.com"
 cognito_public_key_url = f"https://cognito-idp.{REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
 
+# verify x-amzn-oidc-data
 alb_header = jwt.get_unverified_header(HTTP_X_AMZN_OIDC_DATA)
 alb_kid = alb_header["kid"]
-
 alb_public_key_url = f"{alb_public_key_base_url}/{alb_kid}"
 alb_pem = requests.get(alb_public_key_url).text
 alb_public_key = serialization.load_pem_public_key(
@@ -30,6 +30,7 @@ alb_public_key = serialization.load_pem_public_key(
 alb_payload = jwt.decode(HTTP_X_AMZN_OIDC_DATA, alb_public_key, algorithms=["ES256"])
 print("ALB token payload:", alb_payload)
 
+# verify x-amzn-oidc-accesstoken
 cognito_jwk_client = PyJWKClient(cognito_public_key_url)
 cognito_signing_key = cognito_jwk_client.get_signing_key_from_jwt(
     HTTP_X_AMZN_OIDC_ACCESSTOKEN
