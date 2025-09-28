@@ -12,5 +12,6 @@ api_url = f"https://{API_DOMAIN}"
 headers = {"Authorization": f"Bearer {TOKEN}"}
 
 response = requests.get(api_url, headers=headers)
-print(response.status_code)
+
 print(response.text)
+# {"message":"Hello, world!"}

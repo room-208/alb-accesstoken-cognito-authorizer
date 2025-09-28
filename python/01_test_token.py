@@ -28,7 +28,16 @@ alb_public_key = serialization.load_pem_public_key(
     alb_pem.encode(), backend=default_backend()
 )
 alb_payload = jwt.decode(HTTP_X_AMZN_OIDC_DATA, alb_public_key, algorithms=["ES256"])
-print("ALB token payload:", alb_payload)
+
+print(alb_payload)
+# {
+#    "sub": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "email_verified": "true",
+#    "email": "example@example.com",
+#    "username": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "exp": 1759073152,
+#    "iss": "https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_XXXXXXXXX",
+# }
 
 # verify x-amzn-oidc-accesstoken
 cognito_jwk_client = PyJWKClient(cognito_public_key_url)
@@ -38,4 +47,20 @@ cognito_signing_key = cognito_jwk_client.get_signing_key_from_jwt(
 cognito_payload = jwt.decode(
     HTTP_X_AMZN_OIDC_ACCESSTOKEN, cognito_signing_key.key, algorithms=["RS256"]
 )
-print("Cognito access token payload:", cognito_payload)
+
+print(cognito_payload)
+# {
+#    "sub": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "iss": "https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_XXXXXXXXX",
+#    "version": 2,
+#    "client_id": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+#    "origin_jti": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "event_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "token_use": "access",
+#    "scope": "openid example.com/api:all",
+#    "auth_time": 1759073032,
+#    "exp": 1759076632,
+#    "iat": 1759073032,
+#    "jti": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+#    "username": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+# }
