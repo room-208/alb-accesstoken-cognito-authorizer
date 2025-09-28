@@ -8,17 +8,9 @@ dotenv.load_dotenv()
 TOKEN = os.environ["HTTP_X_AMZN_OIDC_ACCESSTOKEN"]
 API_DOMAIN = os.environ["API_DOMAIN"]
 
-api_base_url = f"https://{API_DOMAIN}"
+api_url = f"https://{API_DOMAIN}"
 headers = {"Authorization": f"Bearer {TOKEN}"}
 
-response = requests.get(api_base_url, headers=headers)
-print(response.status_code)
-print(response.text)
-
-response = requests.get(f"{api_base_url}/verify", headers=headers)
-print(response.status_code)
-print(response.text)
-
-response = requests.get(f"{api_base_url}/users", headers=headers)
+response = requests.get(api_url, headers=headers)
 print(response.status_code)
 print(response.text)
