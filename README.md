@@ -36,7 +36,7 @@ source .venv/bin/activate
 pip install -r python/requirements.txt
 ```
 
-### 2. トークンの検証とアクセス確認
+### 3. トークンの検証とアクセス確認
 以下を実行してください。
 ```sh
 cd python
