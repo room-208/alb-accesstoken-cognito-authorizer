@@ -57,7 +57,7 @@ print(cognito_payload)
 #    "origin_jti": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 #    "event_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 #    "token_use": "access",
-#    "scope": "openid example.com/api:all",
+#    "scope": "openid api.example.com/api:all",
 #    "auth_time": 1759073032,
 #    "exp": 1759076632,
 #    "iat": 1759073032,
