@@ -18,3 +18,29 @@ ALBのトークンでCognito オーソライザーの認可をテストするリ
 cdk bootstrap
 cdk deploy
 ```
+
+## トークンのテスト
+
+### 1. トークンの払い出し
+1. Cognitoユーザープールへユーザー登録を行ってください。
+
+2. `example.com`へアクセスし、phpinfoの画面から`x-amzn-oidc-accesstoken, x-amzn-oidc-data`が取得できることを確認してください。
+
+3. [python/.env.example](python/.env.example)をコピーして`python/.env`を作成し、そこへ環境変数を記入してください。
+
+### 2. Pythonの環境構築
+以下を実行してください。
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r python/requirements.txt
+```
+
+### 2. トークンの検証とアクセス確認
+以下を実行してください。
+```sh
+cd python
+python 01_test_token.py
+python 02_test_user_info.py
+python 03_test_api_auth.py
+```
