@@ -71,16 +71,13 @@
         <mxCell id="3sGL6UQ1oduCRwL6jlga-5" value="auth.example.com" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="69" y="48" width="131" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="3sGL6UQ1oduCRwL6jlga-6" value="/&lt;div&gt;/verify&lt;/div&gt;&lt;div&gt;/users&lt;/div&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="340" y="-70" width="60" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="u8mjXGVM8PjKGsMt5R4k-1" value="x-amzn-oidc-accesstoken&lt;div&gt;x-amzn-oidc-identity&lt;/div&gt;&lt;div&gt;x-amzn-oidc-data&lt;/div&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="u8mjXGVM8PjKGsMt5R4k-1" value="x-amzn-oidc-accesstoken&lt;div&gt;x-amzn-oidc-identity&lt;/div&gt;&lt;div&gt;x-amzn-oidc-data&lt;/div&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="365" y="290" width="150" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="u8mjXGVM8PjKGsMt5R4k-2" value="x-amzn-oidc-accesstoken" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="u8mjXGVM8PjKGsMt5R4k-2" value="x-amzn-oidc-accesstoken" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="-40" y="240" width="150" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="u8mjXGVM8PjKGsMt5R4k-3" value="api.example.com/api:all" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="u8mjXGVM8PjKGsMt5R4k-3" value="api.example.com/api:all" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="40" y="-120" width="160" height="30" as="geometry" />
         </mxCell>
       </root>
